@@ -1,0 +1,15 @@
+{
+  "name": "TicTacFunc",
+  "version": "0.0.1",
+  "description": "Tic Tac Toe",
+  "scripts": {
+    "watch": "chokidar '**/*.elm' -c 'elm make src/Main.elm --output elm.js' --initial"
+  },
+  "repository": "https://github.com/eHammarstrom/TicTacFunc",
+  "author": "Emil Hammarstrom",
+  "license": "MIT",
+  "dependencies": {
+    "chokidar-cli": "^1.2.0",
+    "elm": "^0.18.0"
+  }
+}

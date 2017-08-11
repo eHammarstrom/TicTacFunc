@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Tic Tac Toe",
   "scripts": {
-    "watch": "chokidar '**/*.elm' -c 'elm make src/Main.elm --output elm.js' --initial"
+    "watch": "chokidar '**/*.elm' -c 'elm make src/Main.elm --output elm.js' --initial --warn"
   },
   "repository": "https://github.com/eHammarstrom/TicTacFunc",
   "author": "Emil Hammarstrom",

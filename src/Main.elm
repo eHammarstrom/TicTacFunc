@@ -1,34 +1,17 @@
 module Main exposing (..)
 
-import Html exposing (Html, beginnerProgram, div, text, button)
+import Types exposing (..)
+import Components.HeaderView exposing (header)
+import Components.CheckerView exposing (checkerBoard)
+import Html exposing (Html, beginnerProgram, div, text, button, br, span)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (class, classList)
 import List exposing (member, concat, any, map, repeat, range)
 import Tuple exposing (first, second)
+import Maybe
 
 
--- MODEL
-
-
-type Player
-    = X
-    | O
-
-
-type alias Point =
-    ( Int, Int )
-
-
-type alias GameState =
-    { xs : List Point
-    , os : List Point
-    , size : Int
-    , playerTurn : Player
-    }
-
-
-initialState =
-    { xs = [], os = [], size = 3, playerTurn = X }
+-- LOGIC
 
 
 playerPoints : Player -> GameState -> List Point
@@ -43,15 +26,7 @@ playerPoints p s =
 
 isFree : Point -> GameState -> Bool
 isFree p s =
-    member p (concat [ s.xs, s.os ])
-
-
-type alias Direction =
-    Point
-
-
-
--- reversed y coords
+    not (member p (concat [ s.xs, s.os ]))
 
 
 addTuple a b =
@@ -59,7 +34,8 @@ addTuple a b =
 
 
 dirs =
-    -- I miss list comprehensions/applicatives
+    -- reversed y coords
+    -- I miss list comprehensions
     [ ( 0, -1 ) -- N
     , ( -1, 0 ) -- W
     , ( 0, 1 ) -- S
@@ -80,35 +56,31 @@ isWin player point state =
         ps =
             playerPoints player state
 
-        traverse =
-            traverseCheckWin size point ps
+        traverseDir =
+            traverseDirectionCheckWin size point ps
     in
-        any (\x -> x == True) (map traverse dirs)
+        any (\x -> x == True) (map traverseDir dirs)
 
 
-type alias TTL =
-    Int
-
-
-traverseCheckWin : TTL -> Point -> List Point -> Direction -> Bool
-traverseCheckWin ttl p ps d =
+traverseDirectionCheckWin : Int -> Point -> List Point -> Direction -> Bool
+traverseDirectionCheckWin ttl p ps d =
     let
         p_ =
-            ( first p + first d, second p + second d )
+            addTuple p d
 
         ttl_ =
             ttl - 1
     in
         case ttl_ of
             0 ->
-                if member p_ ps then
+                if member p ps then
                     True
                 else
                     False
 
             _ ->
-                if member p_ ps then
-                    True || traverseCheckWin ttl_ p_ ps d
+                if member p ps then
+                    traverseDirectionCheckWin ttl_ p_ ps d
                 else
                     False
 
@@ -127,30 +99,45 @@ nextPlayer p =
 -- UPDATE
 
 
-type PlayerMove
-    = Move Point
-
-
-update :
-    PlayerMove
-    -> GameState
-    -> GameState -- msg : player move, model : game state
-update (Move p) gs =
+updatePs : GameState -> Point -> GameState
+updatePs gs p =
     let
         playerTurn_ =
             nextPlayer gs.playerTurn
 
         newPlayerPoints =
-            (playerPoints gs.playerTurn gs) ++ [ p ]
+            (playerPoints gs.playerTurn gs) ++ [ Debug.log "Updated to point" p ]
     in
-        if isFree p gs then
-            case gs.playerTurn of
-                X ->
-                    { gs | playerTurn = playerTurn_, xs = newPlayerPoints }
+        case gs.playerTurn of
+            X ->
+                Debug.log "GameState changed (X)" { gs | playerTurn = playerTurn_, xs = newPlayerPoints }
 
-                O ->
-                    { gs | playerTurn = playerTurn_, os = newPlayerPoints }
-        else
+            O ->
+                Debug.log "GameState changed (O)" { gs | playerTurn = playerTurn_, os = newPlayerPoints }
+
+
+update :
+    Maybe PlayerMove
+    -> GameState
+    -> GameState
+update p gs =
+    case p of
+        Just (Move p) ->
+            let
+                gs_ =
+                    updatePs gs p
+            in
+                if isWin gs.playerTurn p gs_ then
+                    { gs_ | winner = (Just gs.playerTurn) }
+                else if isFree p gs then
+                    gs_
+                else
+                    gs
+
+        Just Restart ->
+            initialState
+
+        Nothing ->
             gs
 
 
@@ -158,51 +145,33 @@ update (Move p) gs =
 -- VIEW
 
 
-isEven x =
-    (x % 2) == 0
-
-
-colorChecker : Point -> List ( String, Bool )
-colorChecker p =
+displayWinner : Player -> Html (Maybe PlayerMove)
+displayWinner player =
     let
-        ( x, y ) =
-            p
+        playerClass =
+            "winner-player-" ++ (String.toLower (toString player))
     in
-        [ ( "black", (isEven x && isEven y) )
-        , ( "white", (isEven x && not (isEven y)) )
-        , ( "black", (not (isEven x) && not (isEven y)) )
-        , ( "white", (not (isEven x) && isEven y) )
-        ]
-
-
-checker : Point -> Html PlayerMove
-checker p =
-    let
-        ( x, y ) =
-            p
-    in
-        div
-            [ classList (concat [ colorChecker p, [ ( "checker", True ) ] ])
-            , onClick (Move ( 0, 0 ))
+        div [ class "winner", onClick (Just Restart) ]
+            [ span [ class "winner-text" ] [ text "Winner!" ]
+            , br [] []
+            , span [ class playerClass ] [ text (toString player) ]
             ]
-            [ text ("(" ++ toString x ++ "," ++ toString y ++ ")") ]
 
 
-view : GameState -> Html PlayerMove
+view : GameState -> Html (Maybe PlayerMove)
 view gs =
-    let
-        ss =
-            range 0 (gs.size - 1)
-    in
-        div [ class "container" ]
-            (map
-                (\x -> div [ class "row" ] (map (\y -> checker ( x, y )) ss))
-                ss
+    div []
+        [ header gs
+        , div
+            [ class "container" ]
+            (case gs.winner of
+                Just x ->
+                    [ displayWinner x ]
+
+                Nothing ->
+                    checkerBoard gs
             )
-
-
-
---(repeat gs.size (div [ class "row" ] (repeat gs.size (checker ( 0, 0 )))))
+        ]
 
 
 main =

@@ -27,7 +27,7 @@ headerClasslist p =
 header : GameState -> Html (Maybe PlayerMove)
 header gs =
     case gs.winner of
-        Nothing ->
+        None ->
             div [ classList (headerClasslist gs.playerTurn) ] [ text (playerToString gs.playerTurn) ]
 
         _ ->

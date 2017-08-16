@@ -38,12 +38,12 @@ type alias GameState =
     , os : List Point
     , size : Int
     , playerTurn : Player
-    , winner : Maybe Player
+    , winner : Winner
     }
 
 
 initialState =
-    { xs = [], os = [], size = 3, playerTurn = X, winner = Nothing }
+    { xs = [], os = [], size = 3, playerTurn = X, winner = None }
 
 
 type alias Direction =
@@ -55,5 +55,7 @@ type PlayerMove
     | Restart
 
 
-type alias Winner =
-    Maybe Player
+type Winner
+    = Winner Player
+    | Draw
+    | None

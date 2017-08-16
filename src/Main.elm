@@ -6,7 +6,7 @@ import Components.CheckerView exposing (checkerBoard)
 import Html exposing (Html, beginnerProgram, div, text, button, br, span)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (class, classList)
-import List exposing (member, concat, any, map, repeat, range)
+import List exposing (member, concat, any, map, repeat, range, length)
 import Tuple exposing (first, second)
 import Maybe
 
@@ -22,6 +22,14 @@ playerPoints p s =
 
         O ->
             s.os
+
+
+isFull : GameState -> Bool
+isFull s =
+    if (s.size * s.size) == length (concat [ s.xs, s.os ]) then
+        True
+    else
+        False
 
 
 isFree : Point -> GameState -> Bool
@@ -128,7 +136,9 @@ update p gs =
                     updatePs gs p
             in
                 if isWin gs.playerTurn p gs_ then
-                    { gs_ | winner = (Just gs.playerTurn) }
+                    { gs_ | winner = (Winner gs.playerTurn) }
+                else if isFull gs_ then
+                    { gs_ | winner = Draw }
                 else if isFree p gs then
                     gs_
                 else
@@ -158,6 +168,12 @@ displayWinner player =
             ]
 
 
+displayDraw : Html (Maybe PlayerMove)
+displayDraw =
+    div [ class "winner", onClick (Just Restart) ]
+        [ span [ class "winner-text" ] [ text "Draw!" ] ]
+
+
 view : GameState -> Html (Maybe PlayerMove)
 view gs =
     div []
@@ -165,10 +181,13 @@ view gs =
         , div
             [ class "container" ]
             (case gs.winner of
-                Just x ->
+                Winner x ->
                     [ displayWinner x ]
 
-                Nothing ->
+                Draw ->
+                    [ displayDraw ]
+
+                None ->
                     checkerBoard gs
             )
         ]
